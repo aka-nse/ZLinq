@@ -61,18 +61,11 @@ public static class VectorizableExtensions
 
         static void calculateRemain(Span<T> source, Func<Vector<T>, Vector<T>> vectorFunc)
         {
-            var vector = new Vector<T>(source[0]);
-            var span = MemoryMarshal.CreateSpan(ref Unsafe.As<Vector<T>, T>(ref vector), Vector<T>.Count);
-            source.CopyTo(span);
-            vector = vectorFunc(vector);
-            span.Slice(0, source.Length).CopyTo(source);
-            /*
-            Span<Vector<T>> vbuffer = stackalloc Vector<T>[1];
-            Span<T> sbuffer = MemoryMarshal.Cast<Vector<T>, T>(vbuffer);
-            source.CopyTo(sbuffer);
+            Span<Vector<T>> vbuffer = stackalloc Vector<T>[1] { new(source[0]) };
+            var buffer = MemoryMarshal.Cast<Vector<T>, T>(vbuffer);
+            source.CopyTo(buffer);
             vbuffer[0] = vectorFunc(vbuffer[0]);
-            sbuffer.Slice(0, source.Length).CopyTo(source);
-            */
+            buffer.Slice(0, source.Length).CopyTo(source);
         }
     }
 

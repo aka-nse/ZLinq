@@ -8,7 +8,7 @@ namespace Benchmark;
 
 public class VectorizableUpdate
 {
-    [Params(10000)]
+    [Params(9999, 10000)]
     public int N;
 
     int[] source = default!;
@@ -19,7 +19,7 @@ public class VectorizableUpdate
         source = Enumerable.Range(0, N).ToArray();
     }
 
-    [Benchmark]
+    //[Benchmark]
     public int[] For()
     {
         var source = this.source;
@@ -30,6 +30,14 @@ public class VectorizableUpdate
         return source;
     }
 
+
+    [Benchmark]
+    public int[] VectorizedUpdate_OnlyVector()
+    {
+        source.VectorizedUpdate(static x => x * 10);
+        return source;
+    }
+
     [Benchmark]
     public int[] VectorizedUpdate()
     {
@@ -37,7 +45,7 @@ public class VectorizableUpdate
         return source;
     }
 
-    [Benchmark]
+    //[Benchmark]
     public int[] InlineSimd()
     {
         InlineSimd(source);

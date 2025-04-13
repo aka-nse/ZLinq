@@ -38,6 +38,44 @@ public static class VectorizableExtensions
         FromRange.FillIncremental(source, start);
     }
 
+    public static void VectorizedUpdate<T>(this T[] source, Func<Vector<T>, Vector<T>> vectorFunc)
+        where T : unmanaged, INumber<T> => Update(source, vectorFunc);
+
+    public static void VectorizedUpdate<T>(this Span<T> source, Func<Vector<T>, Vector<T>> vectorFunc)
+        where T : unmanaged, INumber<T> => Update(source, vectorFunc);
+
+    static void Update<T>(Span<T> source, Func<Vector<T>, Vector<T>> vectorFunc)
+        where T : unmanaged, INumber<T>
+    {
+        var vectors = MemoryMarshal.Cast<T, Vector<T>>(source);
+        for (int i = 0; i < vectors.Length; i++)
+        {
+            vectors[i] = vectorFunc(vectors[i]);
+        }
+
+        source = source.Slice(vectors.Length * Vector<T>.Count);
+        if (source.Length > 0)
+        {
+            calculateRemain(source, vectorFunc);
+        }
+
+        static void calculateRemain(Span<T> source, Func<Vector<T>, Vector<T>> vectorFunc)
+        {
+            var vector = new Vector<T>(source[0]);
+            var span = MemoryMarshal.CreateSpan(ref Unsafe.As<Vector<T>, T>(ref vector), Vector<T>.Count);
+            source.CopyTo(span);
+            vector = vectorFunc(vector);
+            span.Slice(0, source.Length).CopyTo(source);
+            /*
+            Span<Vector<T>> vbuffer = stackalloc Vector<T>[1];
+            Span<T> sbuffer = MemoryMarshal.Cast<Vector<T>, T>(vbuffer);
+            source.CopyTo(sbuffer);
+            vbuffer[0] = vectorFunc(vbuffer[0]);
+            sbuffer.Slice(0, source.Length).CopyTo(source);
+            */
+        }
+    }
+
     public static void VectorizedUpdate<T>(this T[] source, Func<Vector<T>, Vector<T>> vectorFunc, Func<T, T> func)
         where T : struct, INumber<T> => Update(source, vectorFunc, func);
 
